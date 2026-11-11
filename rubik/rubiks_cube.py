@@ -1,7 +1,7 @@
 from typing import cast
 
-from cubie_data import CubieData, PieceType
-from orientation import Orientation
+from .cubie_data import CubieData, PieceType
+from .orientation import Orientation
 
 class RubiksCube:
     def __init__(self) -> None:
@@ -39,7 +39,7 @@ class RubiksCube:
         active_cubies = [c for c in self.cubies if c.current_position[0] == 1]
         
         for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_x(-90) if prime else Orientation.rotated_x(+90)
+            rotational_matrix = Orientation.rotated_x(90) if prime else Orientation.rotated_x(-90)
             cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
             cubie.orientation *= rotational_matrix # type: ignore
     
@@ -48,7 +48,7 @@ class RubiksCube:
         active_cubies = [c for c in self.cubies if c.current_position[0] == -1]
         
         for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_x(-90) if prime else Orientation.rotated_x(+90)
+            rotational_matrix = Orientation.rotated_x(90) if prime else Orientation.rotated_x(-90)
             cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
             cubie.orientation *= rotational_matrix # type: ignore
         
@@ -57,7 +57,7 @@ class RubiksCube:
         active_cubies = [c for c in self.cubies if c.current_position[1] == 1]
         
         for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_y(-90) if prime else Orientation.rotated_y(+90)
+            rotational_matrix = Orientation.rotated_y(90) if prime else Orientation.rotated_y(-90)
             cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
             cubie.orientation *= rotational_matrix # type: ignore
             
@@ -66,7 +66,7 @@ class RubiksCube:
         active_cubies = [c for c in self.cubies if c.current_position[1] == -1]
         
         for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_y(-90) if prime else Orientation.rotated_y(+90)
+            rotational_matrix = Orientation.rotated_y(90) if prime else Orientation.rotated_y(-90)
             cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
             cubie.orientation *= rotational_matrix # type: ignore
     
@@ -76,7 +76,7 @@ class RubiksCube:
         active_cubies = [c for c in self.cubies if c.current_position[2] == 1]
         
         for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_z(-90) if prime else Orientation.rotated_z(+90)
+            rotational_matrix = Orientation.rotated_z(90) if prime else Orientation.rotated_z(-90)
             cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
             cubie.orientation *= rotational_matrix # type: ignore
     
@@ -85,7 +85,7 @@ class RubiksCube:
         active_cubies = [c for c in self.cubies if c.current_position[2] == -1]
         
         for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_z(-90) if prime else Orientation.rotated_z(+90)
+            rotational_matrix = Orientation.rotated_z(90) if prime else Orientation.rotated_z(-90)
             cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
             cubie.orientation *= rotational_matrix # type: ignore
 
