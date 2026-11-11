@@ -43,11 +43,12 @@ class Game(Base):
         
         # Input Logics
         self.is_holding_shift = False
-        self.turn_duration = 0.8
+        self.turn_duration = 0.3
         self.turn_elapsed = 0.0
 
-        # Turn queue
+        # Turn
         self.turn_queue = deque() # Element structure: (move: str)
+        self.curr_turn = ""
         
         cube_mat = SurfaceMaterial(property_dict={"baseColor": [1.0, 0.0, 0.0]})
         cube_geometry = BoxGeometry()
@@ -68,10 +69,6 @@ class Game(Base):
             util.sync_cubie_mesh(cubie=cubie, object3d=cubie_obj)
             
             self.pitch_pivot.add(cubie_obj)
-
-    def _sync_cubies(self):
-        for cubie, cubie_obj in zip(self.rubiks_cube.cubies, self.cubie_objects):
-            util.sync_cubie_mesh(cubie, cubie_obj)
     
     def _rotate_rubiks(self, horizontal_amount, vertical_amount):
         self.yaw_pivot.rotate_y(horizontal_amount)
@@ -123,31 +120,69 @@ class Game(Base):
 
     def _process_queue(self):
         if self.turn_queue:
-            move = self.turn_queue.popleft()
-            self.rubiks_cube.consume_move(move)
+            self.curr_turn = self.turn_queue.popleft()
+            self.rubiks_cube.consume_move(self.curr_turn)
+        else:
+            self.curr_turn = ""
     
     def _check_input(self):
         self._check_keyboard_input()
         self._check_mouse_input()
     
-    def _animate_turn(self):
-        self.turn_elapsed = min(self.turn_elapsed + self.delta_time, self.turn_duration)
-        t = self.turn_elapsed / self.turn_duration
-        eased = t * t * (3 - 2 * t)  # smoothstep
-        angle = math.pi / 2 * eased
-        
-        util.rotate_about_pivot([0, 1.02 * 1.5, 0], "x", 0.01)
+    def _sync_cubies(self):
+        for cubie, cubie_obj in zip(self.rubiks_cube.cubies, self.cubie_objects):
+            util.sync_cubie_mesh(cubie, cubie_obj)
     
+    def _animate_turn(self, move):
+        if not move or self.turn_elapsed > self.turn_duration:
+            return
+        
+        t = self.delta_time / self.turn_duration
+        
+        clockwise = True
+        face = move[0]
+        if len(move) > 1:
+            if move[1] == "'": clockwise = False
+
+        match face:
+            case "R":
+                selected = util.select_r_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "L":
+                selected = util.select_l_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=not clockwise)
+            case "U":
+                selected = util.select_u_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "D":
+                selected = util.select_d_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=not clockwise)
+            case "F":
+                selected = util.select_f_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "B":
+                selected = util.select_b_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
+            
+        
     def update(self):        
         self._check_input()
         
         self.turn_elapsed += self.delta_time
         
+        self._animate_turn(self.curr_turn)
+        
         if self.turn_elapsed >= self.turn_duration:
             self.turn_elapsed = 0
+            self._sync_cubies()
             self._process_queue()
         
-        self._sync_cubies()
         self.renderer.render(self.scene, self.camera)
 
 if __name__ == "__main__":
