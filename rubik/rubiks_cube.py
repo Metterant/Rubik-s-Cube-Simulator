@@ -33,71 +33,66 @@ class RubiksCube:
             if not cubie.is_solved():
                 return False
         return True
+
+    def _perform_layer_move(
+        self,
+        axis: str,
+        layer: int,
+        clockwise_degrees: int,
+        prime: bool,
+    ) -> None:
+        axis_index = {"x": 0, "y": 1, "z": 2}[axis]
+        rotation_factory = {
+            "x": Orientation.rotated_x,
+            "y": Orientation.rotated_y,
+            "z": Orientation.rotated_z,
+        }[axis]
+        angle = -clockwise_degrees if prime else clockwise_degrees
+        rotational_matrix = rotation_factory(angle)
+
+        for cubie in self.cubies:
+            if cubie.current_position[axis_index] == layer:
+                cubie.current_position = rotational_matrix * cubie.current_position  # type: ignore[assignment]
+                cubie.orientation = rotational_matrix * cubie.orientation  # type: ignore[assignment]
     
     def perform_r_move(self, prime: bool = False):
-        # Select cubies with current X = 1
-        active_cubies = [c for c in self.cubies if c.current_position[0] == 1]
-        
-        for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_x(90) if prime else Orientation.rotated_x(-90)
-            cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
-            cubie.orientation *= rotational_matrix # type: ignore
+        self._perform_layer_move("x", 1, -90, prime)
     
     def perform_l_move(self, prime: bool = False):
-        # Select cubies with current X = -1
-        active_cubies = [c for c in self.cubies if c.current_position[0] == -1]
-        
-        for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_x(90) if prime else Orientation.rotated_x(-90)
-            cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
-            cubie.orientation *= rotational_matrix # type: ignore
+        self._perform_layer_move("x", -1, 90, prime)
         
     def perform_u_move(self, prime: bool = False):
-        # Select cubies with current Y = 1
-        active_cubies = [c for c in self.cubies if c.current_position[1] == 1]
-        
-        for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_y(90) if prime else Orientation.rotated_y(-90)
-            cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
-            cubie.orientation *= rotational_matrix # type: ignore
+        self._perform_layer_move("y", 1, -90, prime)
             
     def perform_d_move(self, prime: bool = False):
-        # Select cubies with current Y = -1
-        active_cubies = [c for c in self.cubies if c.current_position[1] == -1]
-        
-        for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_y(90) if prime else Orientation.rotated_y(-90)
-            cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
-            cubie.orientation *= rotational_matrix # type: ignore
+        self._perform_layer_move("y", -1, 90, prime)
     
-            
     def perform_f_move(self, prime: bool = False):
-        # Select cubies with current Z = 1
-        active_cubies = [c for c in self.cubies if c.current_position[2] == 1]
-        
-        for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_z(90) if prime else Orientation.rotated_z(-90)
-            cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
-            cubie.orientation *= rotational_matrix # type: ignore
+        self._perform_layer_move("z", 1, -90, prime)
     
     def perform_b_move(self, prime: bool = False):
-        # Select cubies with current Z = -1
-        active_cubies = [c for c in self.cubies if c.current_position[2] == -1]
+        self._perform_layer_move("z", -1, 90, prime)
+
+    def perform_m_move(self, prime: bool = False):
+        self._perform_layer_move("x", 0, -90, prime)
+    
+    def perform_e_move(self, prime: bool = False):
+        self._perform_layer_move("y", 0, -90, prime)
         
-        for cubie in active_cubies:
-            rotational_matrix = Orientation.rotated_z(90) if prime else Orientation.rotated_z(-90)
-            cubie.current_position = rotational_matrix * cubie.current_position # type: ignore
-            cubie.orientation *= rotational_matrix # type: ignore
-
-
-rubiks_cube = RubiksCube()
-for i in range(6):
-    rubiks_cube.perform_r_move(prime=False)
-    rubiks_cube.perform_u_move(prime=False)
-    rubiks_cube.perform_r_move(prime=True)
-    rubiks_cube.perform_u_move(prime=True)
-    for cubie in rubiks_cube.cubies:
-        print(cubie.current_position, " ", cubie.orientation)
-    print()
-
-print(rubiks_cube.is_solved())
+    def perform_s_move(self, prime: bool = False):
+        self._perform_layer_move("z", 0, -90, prime)
+    
+    def perform_x_move(self, prime: bool = False):
+        self.perform_r_move(prime)
+        self.perform_m_move(prime)
+        self.perform_l_move(not prime)
+    
+    def perform_y_move(self, prime: bool = False):
+        self.perform_u_move(prime)
+        self.perform_e_move(prime)
+        self.perform_d_move(not prime)
+    
+    def perform_z_move(self, prime: bool = False):
+        self.perform_f_move(prime)
+        self.perform_s_move(prime)
+        self.perform_b_move(not prime)
