@@ -1,5 +1,6 @@
 import math
 import os
+from collections import deque
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -22,23 +23,31 @@ from py3d.core.matrix import Matrix
 
 import create_objects
 import util
+
 from rubik.rubiks_cube import RubiksCube
 from rubik.cubie_data import CubieData
+
 class Game(Base):
     def initialize(self):
         print("Initializing program...")
+        self.screen_width = 800
+        self.screen_height = 600
+        
         self.renderer = Renderer(clear_color=(0.0, 0.8, 0.8))
         self.scene = Scene()
-        self.camera = Camera(aspect_ratio=800/600) # type: ignore
+        self.camera = Camera(aspect_ratio=self.screen_width/self.screen_height) # type: ignore
         self.rig = MovementRig()
         self.rig.add(self.camera)
         self.scene.add(self.rig)
         self.rig.set_position([0, 0, 7])
+        
+        # Input Logics
         self.is_holding_shift = False
-        self.turn_duration = 0.4
-        self.t = 0
-        self.clicked = 0
-        # self.rig.set_direction([0, 0, 1])
+        self.turn_duration = 0.8
+        self.turn_elapsed = 0.0
+
+        # Turn queue
+        self.turn_queue = deque() # Element structure: (move: str)
         
         cube_mat = SurfaceMaterial(property_dict={"baseColor": [1.0, 0.0, 0.0]})
         cube_geometry = BoxGeometry()
@@ -64,46 +73,59 @@ class Game(Base):
         for cubie, cubie_obj in zip(self.rubiks_cube.cubies, self.cubie_objects):
             util.sync_cubie_mesh(cubie, cubie_obj)
     
-    def _check_mouse_input(self):
-        if self.is_holding_shift and self.input.is_mouse_down(self.input.LEFT_CLICK_MOUSE):
-            mouse_rel = self.input.mouse_rel
-            self.yaw_pivot.rotate_y(mouse_rel[0] * 0.005)
-            self.pitch_pivot.rotate_x(mouse_rel[1] * 0.005)
-        if self.input.is_mouse_down(self.input.RIGHT_CLICK_MOUSE):
-            self.pitch_pivot._matrix = Matrix.make_identity()
-            self.yaw_pivot._matrix = Matrix.make_identity()
+    def _rotate_rubiks(self, horizontal_amount, vertical_amount):
+        self.yaw_pivot.rotate_y(horizontal_amount)
+        self.pitch_pivot.rotate_x(vertical_amount)
     
+    def _reset_rotations(self):
+        self.pitch_pivot._matrix = Matrix.make_identity()
+        self.yaw_pivot._matrix = Matrix.make_identity()  
+        
+    def _check_mouse_input(self):        
+        if self.input.buttons[0]:
+            mouse_rel = self.input.mouse_rel
+            self._rotate_rubiks(mouse_rel[0] * 0.005, mouse_rel[1] * 0.005)
+        if self.input.is_mouse_down(self.input.RIGHT_CLICK_MOUSE):
+            self._reset_rotations()
+        
     def _check_keyboard_input(self):   
         self.is_holding_shift = self.input.is_key_pressed("left shift") or self.input.is_key_pressed("right shift")
-             
-        if self.input._key_down_list:
-            self.clicked = self.time
         
+        move = ""
         if self.input.is_key_down("f"):
-            self.rubiks_cube.perform_f_move(prime=self.is_holding_shift)
+            move = "F"
         if self.input.is_key_down("b"):
-            self.rubiks_cube.perform_b_move(prime=self.is_holding_shift)
+            move = "B"
         if self.input.is_key_down("u") or self.input.is_key_down("up"):
-            self.rubiks_cube.perform_u_move(prime=self.is_holding_shift)
+            move = "U"
         if self.input.is_key_down("d") or self.input.is_key_down("down"):
-            self.rubiks_cube.perform_d_move(prime=self.is_holding_shift)
+            move = "D"
         if self.input.is_key_down("r") or self.input.is_key_down("right"):
-            self.rubiks_cube.perform_r_move(prime=self.is_holding_shift)
+            move = "R"
         if self.input.is_key_down("l") or self.input.is_key_down("left"):
-            self.rubiks_cube.perform_l_move(prime=self.is_holding_shift)
+            move = "L"
         if self.input.is_key_down("m"):
-            self.rubiks_cube.perform_m_move(prime=self.is_holding_shift)
+            move = "M"
         if self.input.is_key_down("e"):
-            self.rubiks_cube.perform_e_move(prime=self.is_holding_shift)
+            move = "E"
         if self.input.is_key_down("s"):
-            self.rubiks_cube.perform_s_move(prime=self.is_holding_shift)
+            move = "S"
         if self.input.is_key_down("x"):
-            self.rubiks_cube.perform_x_move(prime=self.is_holding_shift)
+            move = "x"
         if self.input.is_key_down("y"):
-            self.rubiks_cube.perform_y_move(prime=self.is_holding_shift)
+            move = "y"
         if self.input.is_key_down("z"):
-            self.rubiks_cube.perform_z_move(prime=self.is_holding_shift)
+            move = "z"
+        
+        if move:
+            if self.is_holding_shift: move += "'"
+            self.turn_queue.append(move)
 
+    def _process_queue(self):
+        if self.turn_queue:
+            move = self.turn_queue.popleft()
+            self.rubiks_cube.consume_move(move)
+    
     def _check_input(self):
         self._check_keyboard_input()
         self._check_mouse_input()
@@ -116,12 +138,17 @@ class Game(Base):
         
         util.rotate_about_pivot([0, 1.02 * 1.5, 0], "x", 0.01)
     
-    def update(self):
-        # self.rig.update(self.input, self.delta_time)
-        
+    def update(self):        
         self._check_input()
+        
+        self.turn_elapsed += self.delta_time
+        
+        if self.turn_elapsed >= self.turn_duration:
+            self.turn_elapsed = 0
+            self._process_queue()
         
         self._sync_cubies()
         self.renderer.render(self.scene, self.camera)
 
-Game(screen_size=[800, 600]).run()
+if __name__ == "__main__":
+    Game(screen_size=[800, 600]).run()
