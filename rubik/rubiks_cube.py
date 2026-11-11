@@ -6,6 +6,29 @@ from .orientation import Orientation
 class RubiksCube:
     def __init__(self) -> None:
         self.cubies: list[CubieData] = []
+        self.move_dict = {
+            "R": self.perform_r_move,
+            "L": self.perform_l_move,
+            "U": self.perform_u_move,
+            "D": self.perform_d_move,
+            "F": self.perform_f_move,
+            "B": self.perform_b_move,
+            "M": self.perform_m_move,
+            "E": self.perform_e_move,
+            "S": self.perform_s_move,
+            "x": self.perform_x_move,
+            "y": self.perform_y_move,
+            "z": self.perform_z_move,
+            "r": self.perform_r_move,
+            "l": self.perform_l_move,
+            "u": self.perform_u_move,
+            "d": self.perform_d_move,
+            "f": self.perform_f_move,
+            "b": self.perform_b_move,
+            "m": self.perform_m_move,
+            "e": self.perform_e_move,
+            "s": self.perform_s_move
+        }
         self._initialize_cube()
 
     def _initialize_cube(self):
@@ -54,6 +77,17 @@ class RubiksCube:
             if cubie.current_position[axis_index] == layer:
                 cubie.current_position = rotational_matrix * cubie.current_position  # type: ignore[assignment]
                 cubie.orientation = rotational_matrix * cubie.orientation  # type: ignore[assignment]
+    
+    def consume_move(self, move):
+        prime = False
+        number_of_repeats = 1
+        
+        if len(move) > 1:
+            if move[1] == "'": prime = True
+            else: number_of_repeats = int(move[1])
+        
+        for i in range(number_of_repeats): 
+            self.move_dict[move[0]](prime)
     
     def perform_r_move(self, prime: bool = False):
         self._perform_layer_move("x", 1, -90, prime)
