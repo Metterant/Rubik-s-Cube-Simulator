@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum, auto
 
-from orientation import Orientation
+from .orientation import Orientation
 
 class PieceType(Enum):
-    EDGE = auto()
     CORNER = auto()
+    EDGE = auto()
     CENTER = auto()
 
 @dataclass
