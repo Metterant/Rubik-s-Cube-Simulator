@@ -23,7 +23,7 @@ from py3d.core.matrix import Matrix
 
 import create_objects
 import util
-from ui_overlay import UIOverlay
+from gui_overlay import GUIOverlay
 
 from rubik.rubiks_cube import RubiksCube
 from rubik.cubie_data import CubieData
@@ -48,7 +48,7 @@ class Game(Base):
         self.turn_elapsed = 0.0
         
         # UI
-        self.ui = UIOverlay(self.screen_width, self.screen_height)
+        self.gui = GUIOverlay(self.screen_width, self.screen_height)
 
         # Turn
         self.turn_queue = deque() # Element structure: (move: str)
@@ -187,8 +187,8 @@ class Game(Base):
         
         self.renderer.render(self.scene, self.camera)
         self.renderer.render(
-            self.ui.scene,
-            self.ui.camera,
+            self.gui.scene,
+            self.gui.camera,
             clear_color=False, # Keep color buffer
             clear_depth=True, # Make sure other objects will not block the UI
         )
