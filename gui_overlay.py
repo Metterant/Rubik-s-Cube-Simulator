@@ -36,7 +36,7 @@ class GUIOverlay:
         self.buttons = []
         
         self.label1 = Label(0, 0, "hello there, this is my text", 18)
-        self.scene.add(self.label1.mesh)                
+        self.scene.add(self.label1)                
     
     # def create_button(self, x, y, width, height, label_text) -> Mesh:
         
