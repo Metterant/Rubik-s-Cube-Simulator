@@ -18,7 +18,9 @@ from py3d.extras.text_texture import TextTexture
 from py3d.material.basic import BasicMaterial
 from py3d.core.matrix import Matrix
 
-class UIOverlay:
+from gui.label import Label
+
+class GUIOverlay:
     def __init__(self, screen_width, screen_height) -> None:
         self.screen_width = screen_width
         self.screen_height = screen_height
@@ -31,30 +33,10 @@ class UIOverlay:
             top=screen_height,
         )
         
-        self.label1 = self.create_label(0, 0, "hello there, this is my text", 18)
-        self.scene.add(self.label1)
+        self.buttons = []
+        
+        self.label1 = Label(0, 0, "hello there, this is my text", 18)
+        self.scene.add(self.label1.mesh)                
     
-    def create_label(self, pos_x = 0, pos_y = 0, text="label", font_size=28) -> Mesh:
-        text_texture = TextTexture(
-            text=text,
-            font_size=font_size,
-            transparent=True,
-        )
-        text_texture.set_properties({
-            "magFilter": GL.GL_LINEAR,
-            "minFilter": GL.GL_LINEAR,
-        })
-        # Reupload data because filters have been changed
-        text_texture.upload_data()
-
-        text_width, text_height = text_texture.surface.get_size() # type: ignore
-
-        text_geometry = RectangleGeometry(
-            text_width,
-            text_height,
-            position=(pos_x, pos_y),
-            alignment=(0, 0),
-        )
-                
-        return Mesh(text_geometry, TextureMaterial(text_texture))
+    # def create_button(self, x, y, width, height, label_text) -> Mesh:
         
