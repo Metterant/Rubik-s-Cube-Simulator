@@ -1,5 +1,5 @@
-import math
 import os
+import OpenGL.GL as GL
 from collections import deque
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -23,6 +23,7 @@ from py3d.core.matrix import Matrix
 
 import create_objects
 import util
+from ui_overlay import UIOverlay
 
 from rubik.rubiks_cube import RubiksCube
 from rubik.cubie_data import CubieData
@@ -45,21 +46,22 @@ class Game(Base):
         self.is_holding_shift = False
         self.turn_duration = 0.3
         self.turn_elapsed = 0.0
+        
+        # UI
+        self.ui = UIOverlay(self.screen_width, self.screen_height)
 
         # Turn
         self.turn_queue = deque() # Element structure: (move: str)
         self.curr_turn = ""
         
-        cube_mat = SurfaceMaterial(property_dict={"baseColor": [1.0, 0.0, 0.0]})
-        cube_geometry = BoxGeometry()
-        self.cube = Mesh(cube_geometry, cube_mat)
-        
+        # Pivots of the Rubik's Cube
         self.yaw_pivot = Object3D()
         self.pitch_pivot = Object3D()
         
         self.yaw_pivot.add(self.pitch_pivot)
         self.scene.add(self.yaw_pivot)
         
+        # Create Cubie Objects
         self.rubiks_cube = RubiksCube()
         self.cubie_objects: list[Object3D] = []
         
@@ -184,6 +186,13 @@ class Game(Base):
             self._process_queue()
         
         self.renderer.render(self.scene, self.camera)
+        self.renderer.render(
+            self.ui.scene,
+            self.ui.camera,
+            clear_color=False, # Keep color buffer
+            clear_depth=True, # Make sure other objects will not block the UI
+        )
+        # pygame.display.flip() presents the combined result
 
 if __name__ == "__main__":
     Game(screen_size=[800, 600]).run()
