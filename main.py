@@ -46,9 +46,6 @@ class Game(Base):
         self.is_holding_shift = False
         self.turn_duration = 0.3
         self.turn_elapsed = 0.0
-        
-        # UI
-        self.gui = GUIOverlay(self.screen_width, self.screen_height)
 
         # Turn
         self.turn_queue = deque() # Element structure: (move: str)
@@ -71,6 +68,9 @@ class Game(Base):
             util.sync_cubie_mesh(cubie=cubie, object3d=cubie_obj)
             
             self.pitch_pivot.add(cubie_obj)
+        
+        # UI
+        self.gui = GUIOverlay(self.screen_width, self.screen_height)
     
     def _rotate_rubiks(self, horizontal_amount, vertical_amount):
         self.yaw_pivot.rotate_y(horizontal_amount)
@@ -173,8 +173,10 @@ class Game(Base):
                     util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
             
         
-    def update(self):        
-        self._check_input()
+    def update(self):
+        gui_consumed = self.gui.handle_input(self.input)
+        if not gui_consumed:
+            self._check_input()
         
         self.turn_elapsed += self.delta_time
         
