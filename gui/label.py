@@ -23,7 +23,7 @@ class Label(Mesh):
         # Reupload data because filters have been changed
         texture.upload_data()
     
-        text_width, text_height = text_texture.surface.get_size() # type: ignore
+        text_width, text_height = texture.surface.get_size() # type: ignore
     
         geometry = RectangleGeometry(
             text_width,
@@ -33,4 +33,4 @@ class Label(Mesh):
         )
         
         super().__init__(geometry, TextureMaterial(texture))
-        self.set_position([pos_x, pos_y, 0])
+        self.set_position([pos_x, pos_y, 0.0])
