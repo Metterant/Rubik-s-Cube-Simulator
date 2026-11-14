@@ -51,3 +51,12 @@ def select_f_cubies(cubie_objects: list[Object3D], spacing=1.02):
 
 def select_b_cubies(cubie_objects: list[Object3D], spacing=1.02):
     return [cubie_obj for cubie_obj in cubie_objects if round((np.array(cubie_obj.local_position) / spacing)[2]) == -1]
+
+def select_m_cubies(cubie_objects: list[Object3D], spacing=1.02):
+    return [cubie_obj for cubie_obj in cubie_objects if round((np.array(cubie_obj.local_position) / spacing)[0]) == 0]
+
+def select_e_cubies(cubie_objects: list[Object3D], spacing=1.02):
+    return [cubie_obj for cubie_obj in cubie_objects if round((np.array(cubie_obj.local_position) / spacing)[1]) == 0]
+
+def select_s_cubies(cubie_objects: list[Object3D], spacing=1.02):
+    return [cubie_obj for cubie_obj in cubie_objects if round((np.array(cubie_obj.local_position) / spacing)[2]) == 0]
