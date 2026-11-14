@@ -41,8 +41,9 @@ class GUIOverlay:
         self.label1 = Label(0, 0, "hello there, this is my text", 18)
         self.scene.add(self.label1)
         
-    def add_button(self, x, y, width, height, callback, text="Button", font_size=28):
+    def add_button(self, x, y, width, height, callback, text="Button", font_size=28, text_offset=(0, 0)):
         new_button = Button(x, y, width, height, callback, text, font_size)
+        new_button.label.set_position((text_offset[0], text_offset[1], 0))
         self.buttons.append(new_button)
         self.scene.add(new_button)
     
