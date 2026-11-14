@@ -84,7 +84,7 @@ class RubiksCube:
         
         if len(move) > 1:
             if move[1] == "'": prime = True
-            else: number_of_repeats = int(move[1])
+            else: number_of_repeats = max(1, int(move[1]))
         
         for i in range(number_of_repeats): 
             self.move_dict[move[0]](prime)
