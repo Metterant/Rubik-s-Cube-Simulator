@@ -171,6 +171,30 @@ class Game(Base):
                 selected = util.select_b_cubies(self.cubie_objects)
                 for cubie in selected:
                     util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
+            case "M":
+                selected = util.select_m_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "E":
+                selected = util.select_e_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "S":
+                selected = util.select_s_cubies(self.cubie_objects)
+                for cubie in selected:
+                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
+            case "x":
+                selected = self.cubie_objects
+                for cubie in selected:
+                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "y":
+                selected = self.cubie_objects
+                for cubie in selected:
+                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+            case "z":
+                selected = self.cubie_objects
+                for cubie in selected:
+                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             
         
     def update(self):
