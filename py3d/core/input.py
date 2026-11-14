@@ -16,6 +16,7 @@ class Input:
         self._left_click_up = False
         self._right_click_up = False
         self.buttons = [False, False, False]
+        self.wheel_y = 0
         self.mouse_pos = []
         self.mouse_rel = []
 
@@ -62,6 +63,8 @@ class Input:
         self._left_click_up = False
         self._right_click_down = False
         self._right_click_up = False
+        self.wheel_y = 0
+        
         # Iterate over all user input events (such as keyboard or mouse)
         # that occurred since the last time events were checked
         for event in pygame.event.get():
@@ -87,6 +90,9 @@ class Input:
                 self._right_click_down = True
             elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
                 self._right_click_up = True
+            
+            if event.type == pygame.MOUSEWHEEL:
+                self.wheel_y = event.y
                     
         self.buttons = pygame.mouse.get_pressed()
         self.mouse_pos = pygame.mouse.get_pos()
