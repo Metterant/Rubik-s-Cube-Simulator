@@ -21,8 +21,12 @@ from py3d.extras.text_texture import TextTexture
 from py3d.material.basic import BasicMaterial
 from py3d.core.matrix import Matrix
 
-import create_objects
-import util
+
+import utils.create_objects as create_objects
+import utils.cubies as cubies
+import utils.rotate as rotate
+import utils.sequences as sequences
+
 from gui_overlay import GUIOverlay
 
 from rubik.rubiks_cube import RubiksCube
@@ -42,10 +46,21 @@ class Game(Base):
         self.scene.add(self.rig)
         self.rig.set_position([0, 0, 7])
         
+        # Values
+        self.rig_z_range = [5, 14]
+        self.turn_duration = 0.25
+        self.mouse_rotate_multiplier = 0.005
+        self.mouse_wheel_zoom_multiplier = 0.4
+        self.moves_turned = 0
+        
+        # Times
+        self.turn_elapsed = 0.0
+        
+        # Configurations
+        self.is_locked = False
+        
         # Input Logics
         self.is_holding_shift = False
-        self.turn_duration = 0.3
-        self.turn_elapsed = 0.0
 
         # Turn
         self.turn_queue = deque() # Element structure: (move: str)
@@ -65,12 +80,13 @@ class Game(Base):
         for cubie in self.rubiks_cube.cubies:
             cubie_obj = create_objects.create_cubie(cubie.home_position)
             self.cubie_objects.append(cubie_obj)
-            util.sync_cubie_mesh(cubie=cubie, object3d=cubie_obj)
+            cubies.sync_cubie_mesh(cubie=cubie, object3d=cubie_obj)
             
             self.pitch_pivot.add(cubie_obj)
         
         # UI
         self.gui = GUIOverlay(self.screen_width, self.screen_height)
+        self.gui.add_button(x=10, y=10, width=100, height=32, callback=self._scramble, text="Scramble")
     
     def _rotate_rubiks(self, horizontal_amount, vertical_amount):
         self.yaw_pivot.rotate_y(horizontal_amount)
@@ -83,9 +99,11 @@ class Game(Base):
     def _check_mouse_input(self):        
         if self.input.buttons[0]:
             mouse_rel = self.input.mouse_rel
-            self._rotate_rubiks(mouse_rel[0] * 0.005, mouse_rel[1] * 0.005)
+            self._rotate_rubiks(mouse_rel[0] * self.mouse_rotate_multiplier, mouse_rel[1] * self.mouse_rotate_multiplier)
         if self.input.is_mouse_down(self.input.RIGHT_CLICK_MOUSE):
             self._reset_rotations()
+            
+        self.translate_rig_z(-self.input.wheel_y * self.mouse_wheel_zoom_multiplier)
         
     def _check_keyboard_input(self):   
         self.is_holding_shift = self.input.is_key_pressed("left shift") or self.input.is_key_pressed("right shift")
@@ -116,12 +134,13 @@ class Game(Base):
         if self.input.is_key_down("z"):
             move = "z"
         
-        if move:
+        if move and not self.is_locked:
             if self.is_holding_shift: move += "'"
             self.turn_queue.append(move)
 
     def _process_queue(self):
         if self.turn_queue:
+            self.moves_turned += 1
             self.curr_turn = self.turn_queue.popleft()
             self.rubiks_cube.consume_move(self.curr_turn)
         else:
@@ -133,83 +152,109 @@ class Game(Base):
     
     def _sync_cubies(self):
         for cubie, cubie_obj in zip(self.rubiks_cube.cubies, self.cubie_objects):
-            util.sync_cubie_mesh(cubie, cubie_obj)
+            cubies.sync_cubie_mesh(cubie, cubie_obj)
     
     def _animate_turn(self, move):
-        if not move or self.turn_elapsed > self.turn_duration:
+        if not move:
             return
         
-        t = self.delta_time / self.turn_duration
-        
         clockwise = True
+        number_of_repeats = 1
         face = move[0]
         if len(move) > 1:
             if move[1] == "'": clockwise = False
-
+            else: number_of_repeats = max(1, int(move[1]))
+        
+        t = self.delta_time / self.turn_duration * number_of_repeats
+        
         match face:
             case "R":
-                selected = util.select_r_cubies(self.cubie_objects)
+                selected = cubies.select_r_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "L":
-                selected = util.select_l_cubies(self.cubie_objects)
+                selected = cubies.select_l_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=not clockwise)
+                    rotate.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=not clockwise)
             case "U":
-                selected = util.select_u_cubies(self.cubie_objects)
+                selected = cubies.select_u_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "D":
-                selected = util.select_d_cubies(self.cubie_objects)
+                selected = cubies.select_d_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=not clockwise)
+                    rotate.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=not clockwise)
             case "F":
-                selected = util.select_f_cubies(self.cubie_objects)
+                selected = cubies.select_f_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "B":
-                selected = util.select_b_cubies(self.cubie_objects)
+                selected = cubies.select_b_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
+                    rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
             case "M":
-                selected = util.select_m_cubies(self.cubie_objects)
+                selected = cubies.select_m_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "E":
-                selected = util.select_e_cubies(self.cubie_objects)
+                selected = cubies.select_e_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "S":
-                selected = util.select_s_cubies(self.cubie_objects)
+                selected = cubies.select_s_cubies(self.cubie_objects)
                 for cubie in selected:
-                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
+                    rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
             case "x":
                 selected = self.cubie_objects
                 for cubie in selected:
-                    util.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_x_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "y":
                 selected = self.cubie_objects
                 for cubie in selected:
-                    util.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+                    rotate.rotate_about_y_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "z":
                 selected = self.cubie_objects
                 for cubie in selected:
-                    util.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
-            
+                    rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
+    
+    def _scramble(self):
+        """
+        Replace turn_queue with a sequence of 20 random moves and locks 
+        the rubik's cube from getting turned until the turn_queue is empty.
+        """
+        
+        print("Scrambling")
+        
+        self.is_locked = True
+
+        self.turn_queue.clear()
+        for move in sequences.generate_scramble_sequence():
+            self.turn_queue.append(move)
+        
+    
+    def translate_rig_z(self, z_amount=0.0):
+        curr_z = self.rig.local_position[2]
+        
+        if self.rig_z_range[0] <= curr_z + z_amount <= self.rig_z_range[1]:
+            self.rig.translate(0, 0, z_amount)
         
     def update(self):
+
+        self._animate_turn(self.curr_turn)
+        
         gui_consumed = self.gui.handle_input(self.input)
+        
         if not gui_consumed:
             self._check_input()
         
-        self.turn_elapsed += self.delta_time
-        
-        self._animate_turn(self.curr_turn)
-        
-        if self.turn_elapsed >= self.turn_duration:
+        if self.turn_queue or self.curr_turn:
+            self.turn_elapsed += self.delta_time
+            if self.turn_elapsed >= self.turn_duration:
+                self.turn_elapsed = 0
+                self._sync_cubies()
+                self._process_queue()
+        else:
             self.turn_elapsed = 0
-            self._sync_cubies()
-            self._process_queue()
         
         self.renderer.render(self.scene, self.camera)
         self.renderer.render(
