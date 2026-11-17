@@ -1,0 +1,4 @@
+RubikOptimal
+PyOpenGL
+numpy
+pygame
