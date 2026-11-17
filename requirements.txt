@@ -1,4 +1,3 @@
-RubikOptimal
 PyOpenGL
 numpy
 pygame
