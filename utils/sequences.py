@@ -1,5 +1,6 @@
 import random
 import twophase.solver as sv
+from copy import deepcopy
 from collections import deque
 
 from rubik.rubiks_cube import RubiksCube
@@ -71,9 +72,16 @@ def generate_orientation_reset_sequence(cube: RubiksCube):
     return []
 
 def generate_solution_sequence(cube: RubiksCube):
-    cubestring = cube.serialize()
+    normalized_rubiks_cube = deepcopy(cube)
+    
+    rotation_solution = generate_orientation_reset_sequence(cube)
+    for move in rotation_solution:
+        normalized_rubiks_cube.consume_move(move)
+    
+    
+    cubestring = normalized_rubiks_cube.serialize()
     
     solution = sv.solve(cubestring).split()
     solution.pop()
     
-    return solution
+    return rotation_solution + solution
