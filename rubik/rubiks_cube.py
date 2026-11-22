@@ -130,3 +130,43 @@ class RubiksCube:
         self.perform_f_move(prime)
         self.perform_s_move(prime)
         self.perform_b_move(not prime)
+    
+    def get_cube_orientation(self):
+        # Get directions of R, U, and F faces
+        r_dir = u_dir = f_dir = ()
+        for cubie in self.cubies:
+            if cubie.home_position == (1, 0, 0):
+                r_dir = cubie.orientation.get_column(0)
+            elif cubie.home_position == (0, 1, 0):
+                u_dir = cubie.orientation.get_column(1)
+            elif cubie.home_position == (0, 0, 1):
+                f_dir = cubie.orientation.get_column(2)
+        
+        row0 = (r_dir[0], u_dir[0], f_dir[0]) # type: ignore
+        row1 = (r_dir[1], u_dir[1], f_dir[1]) # type: ignore
+        row2 = (r_dir[2], u_dir[2], f_dir[2]) # type: ignore
+        
+        return Orientation((row0, row1, row2))
+    
+    def serialize(self):
+        """
+        Generate cubestring given current RubiksCube state.
+        """
+    
+        print(self.get_cube_orientation())
+    
+        # Mapping of directions with faces
+        faces = {
+            ( 0,  1,  0): "U",
+            ( 1,  0,  0): "R",
+            ( 0,  0,  1): "F",
+            ( 0, -1,  0): "D",
+            (-1,  0,  0): "L",
+            ( 0,  0, -1): "B"
+        }
+        
+        for cubie in self.cubies:
+            pass
+        
+        return 'DUUBULDBFRBFRRULLLBRDFFFBLURDBFDFDRFRULBLUFDURRBLBDUDL'
+                
