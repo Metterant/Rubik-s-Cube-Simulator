@@ -87,6 +87,8 @@ class Game(Base):
         # UI
         self.gui = GUIOverlay(self.screen_width, self.screen_height)
         self.gui.add_button(x=10, y=10, width=100, height=32, callback=self._scramble, text="Scramble")
+        self.gui.add_button(x=10, y=50, width=100, height=32, callback=self._serialize, text="Serialize")
+        self.gui.add_button(x=10, y=90, width=100, height=32, callback=self._solve, text="Solve")
     
     def _rotate_rubiks(self, horizontal_amount, vertical_amount):
         self.yaw_pivot.rotate_y(horizontal_amount)
@@ -95,7 +97,23 @@ class Game(Base):
     def _reset_rotations(self):
         self.pitch_pivot._matrix = Matrix.make_identity()
         self.yaw_pivot._matrix = Matrix.make_identity()  
+    
+    def _feed_moves(self, moves, clear=True, lock_until_complete=True):
+        self.is_locked = lock_until_complete
+        if clear:
+            self.turn_queue.clear()
         
+        for move in moves:
+            self.turn_queue.append(move)
+    
+    def _process_queue(self):
+        if self.turn_queue:
+            self.moves_turned += 1
+            self.curr_turn = self.turn_queue.popleft()
+            self.rubiks_cube.consume_move(self.curr_turn)
+        else:
+            self.curr_turn = ""
+
     def _check_mouse_input(self):        
         if self.input.buttons[0]:
             mouse_rel = self.input.mouse_rel
@@ -137,14 +155,6 @@ class Game(Base):
         if move and not self.is_locked:
             if self.is_holding_shift: move += "'"
             self.turn_queue.append(move)
-
-    def _process_queue(self):
-        if self.turn_queue:
-            self.moves_turned += 1
-            self.curr_turn = self.turn_queue.popleft()
-            self.rubiks_cube.consume_move(self.curr_turn)
-        else:
-            self.curr_turn = ""
     
     def _check_input(self):
         self._check_keyboard_input()
@@ -203,7 +213,7 @@ class Game(Base):
             case "S":
                 selected = cubies.select_s_cubies(self.cubie_objects)
                 for cubie in selected:
-                    rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise= not clockwise)
+                    rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
             case "x":
                 selected = self.cubie_objects
                 for cubie in selected:
@@ -217,6 +227,10 @@ class Game(Base):
                 for cubie in selected:
                     rotate.rotate_about_z_axis(object3d=cubie, delta_t=t, clockwise=clockwise)
     
+    # ========================
+    # Callbacks
+    # ========================
+    
     def _scramble(self):
         """
         Replace turn_queue with a sequence of 20 random moves and locks 
@@ -224,13 +238,20 @@ class Game(Base):
         """
         
         print("Scrambling")
-        
-        self.is_locked = True
+        sequence = sequences.generate_scramble_sequence()
+        self._feed_moves(sequence)
 
-        self.turn_queue.clear()
-        for move in sequences.generate_scramble_sequence():
-            self.turn_queue.append(move)
+        print("Scramble sequence: ", sequence)
+                
+    def _serialize(self):
+        print(f"Serialized: {self.rubiks_cube.serialize()}")
+    
+    def _solve(self):
+        rotation_sequence = sequences.generate_orientation_reset_sequence(self.rubiks_cube)
+        solution_sequence = sequences.generate_solution_sequence(self.rubiks_cube)
         
+        print("Solution sequence: ", solution_sequence)
+        self._feed_moves(solution_sequence)
     
     def translate_rig_z(self, z_amount=0.0):
         curr_z = self.rig.local_position[2]
@@ -239,7 +260,6 @@ class Game(Base):
             self.rig.translate(0, 0, z_amount)
         
     def update(self):
-
         self._animate_turn(self.curr_turn)
         
         gui_consumed = self.gui.handle_input(self.input)
@@ -254,6 +274,7 @@ class Game(Base):
                 self._sync_cubies()
                 self._process_queue()
         else:
+            self.is_locked = False
             self.turn_elapsed = 0
         
         self.renderer.render(self.scene, self.camera)
