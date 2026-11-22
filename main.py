@@ -64,6 +64,8 @@ class Game(Base):
 
         # Turn
         self.turn_queue = deque() # Element structure: (move: str)
+        self.turn_stack = deque() # Turn history
+        self.turn_stack_max_size = 30
         self.curr_turn = ""
         
         # Pivots of the Rubik's Cube
@@ -87,8 +89,10 @@ class Game(Base):
         # UI
         self.gui = GUIOverlay(self.screen_width, self.screen_height)
         self.gui.add_button(x=10, y=10, width=100, height=32, callback=self._scramble, text="Scramble")
-        self.gui.add_button(x=10, y=50, width=100, height=32, callback=self._serialize, text="Serialize")
-        self.gui.add_button(x=10, y=90, width=100, height=32, callback=self._solve, text="Solve")
+        self.gui.add_button(x=10, y=50, width=100, height=32, callback=self._solve, text="Solve", text_offset=(12, 0))
+        
+        self.gui.add_button(x=self.screen_width - 110, y=10, width=100, height=32, callback=self._undo, text="Undo", text_offset=(20, 0))
+        self.gui.add_button(x=self.screen_width - 110, y=50, width=100, height=32, callback=self._serialize, text="Serialize")
     
     def _rotate_rubiks(self, horizontal_amount, vertical_amount):
         self.yaw_pivot.rotate_y(horizontal_amount)
@@ -98,21 +102,49 @@ class Game(Base):
         self.pitch_pivot._matrix = Matrix.make_identity()
         self.yaw_pivot._matrix = Matrix.make_identity()  
     
-    def _feed_moves(self, moves, clear=True, lock_until_complete=True):
+    def _feed_moves(self, moves, clear=True, lock_until_complete=True, add_to_history=True):
         self.is_locked = lock_until_complete
         if clear:
             self.turn_queue.clear()
         
         for move in moves:
-            self.turn_queue.append(move)
+            self.turn_queue.append((move, add_to_history))
     
     def _process_queue(self):
         if self.turn_queue:
             self.moves_turned += 1
-            self.curr_turn = self.turn_queue.popleft()
+            self.curr_turn, add_to_history = self.turn_queue.popleft()
+
+            if add_to_history:
+                self._push_stack(self.curr_turn)
+
             self.rubiks_cube.consume_move(self.curr_turn)
         else:
             self.curr_turn = ""
+
+    def _push_stack(self, move):
+        while len(self.turn_stack) >= self.turn_stack_max_size:
+            self.turn_stack.popleft()
+            
+        self.turn_stack.append(move)
+        
+    def _get_undo_move(self):
+        if not self.turn_stack:
+            return ""
+        
+        prime = False
+        number_of_repeats = 1
+        move = self.turn_stack.pop()
+        
+        if len(move) > 1:
+            if move[1] == "'": prime = True
+            else: number_of_repeats = max(1, int(move[1]))
+        
+        if prime == True:
+            return move[0]
+        if number_of_repeats == 1:
+            return move[0] + "'"
+        return move[0] + str(4 - (number_of_repeats % 4))
 
     def _check_mouse_input(self):        
         if self.input.buttons[0]:
@@ -154,7 +186,7 @@ class Game(Base):
         
         if move and not self.is_locked:
             if self.is_holding_shift: move += "'"
-            self.turn_queue.append(move)
+            self._feed_moves([move], False, False)
     
     def _check_input(self):
         self._check_keyboard_input()
@@ -247,11 +279,14 @@ class Game(Base):
         print(f"Serialized: {self.rubiks_cube.serialize()}")
     
     def _solve(self):
-        rotation_sequence = sequences.generate_orientation_reset_sequence(self.rubiks_cube)
         solution_sequence = sequences.generate_solution_sequence(self.rubiks_cube)
         
         print("Solution sequence: ", solution_sequence)
         self._feed_moves(solution_sequence)
+
+    def _undo(self):
+        move = self._get_undo_move()
+        self._feed_moves([move], False, False, False)
     
     def translate_rig_z(self, z_amount=0.0):
         curr_z = self.rig.local_position[2]
