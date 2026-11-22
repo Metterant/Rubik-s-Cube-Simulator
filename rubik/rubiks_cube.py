@@ -82,11 +82,13 @@ class RubiksCube:
         prime = False
         number_of_repeats = 1
         
+        if not move: return
+        
         if len(move) > 1:
             if move[1] == "'": prime = True
             else: number_of_repeats = max(1, int(move[1]))
         
-        for i in range(number_of_repeats): 
+        for i in range(number_of_repeats):
             self.move_dict[move[0]](prime)
     
     def perform_r_move(self, prime: bool = False):
