@@ -68,3 +68,9 @@ class Orientation:
             (0, 0, 1),
         )
         return Orientation(m)
+    
+    def get_column(self, col: int):
+        if not 0 <= col <= 2:
+            return None
+
+        return [self.matrix[k][col] for k in range(3)]
