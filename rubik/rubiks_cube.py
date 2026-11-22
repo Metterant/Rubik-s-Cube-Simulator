@@ -130,7 +130,7 @@ class RubiksCube:
         self.perform_f_move(prime)
         self.perform_s_move(prime)
         self.perform_b_move(not prime)
-    
+
     def get_cube_orientation(self):
         # Get directions of R, U, and F faces
         r_dir = u_dir = f_dir = ()
@@ -148,25 +148,50 @@ class RubiksCube:
         
         return Orientation((row0, row1, row2))
     
-    def serialize(self):
-        """
-        Generate cubestring given current RubiksCube state.
-        """
-    
-        print(self.get_cube_orientation())
-    
-        # Mapping of directions with faces
-        faces = {
-            ( 0,  1,  0): "U",
-            ( 1,  0,  0): "R",
-            ( 0,  0,  1): "F",
-            ( 0, -1,  0): "D",
-            (-1,  0,  0): "L",
-            ( 0,  0, -1): "B"
+    def serialize(self) -> str:
+        face_order = "URFDLB"
+        normals = {
+            "U": (0, 1, 0),
+            "R": (1, 0, 0),
+            "F": (0, 0, 1),
+            "D": (0, -1, 0),
+            "L": (-1, 0, 0),
+            "B": (0, 0, -1),
         }
-        
-        for cubie in self.cubies:
-            pass
-        
-        return 'DUUBULDBFRBFRRULLLBRDFFFBLURDBFDFDRFRULBLUFDURRBLBDUDL'
-                
+        color_by_normal = {normal: face for face, normal in normals.items()}
+
+        # Facelet order expected by the common URFDLB cube-string format.
+        positions = {
+            "U": [(x, 1, z) for z in (-1, 0, 1) for x in (-1, 0, 1)],
+            "R": [(1, y, z) for y in (1, 0, -1) for z in (1, 0, -1)],
+            "F": [(x, y, 1) for y in (1, 0, -1) for x in (-1, 0, 1)],
+            "D": [(x, -1, z) for z in (1, 0, -1) for x in (-1, 0, 1)],
+            "L": [(-1, y, z) for y in (1, 0, -1) for z in (-1, 0, 1)],
+            "B": [(x, y, -1) for y in (1, 0, -1) for x in (1, 0, -1)],
+        }
+
+        cubie_at = {cubie.current_position: cubie for cubie in self.cubies}
+        result = []
+
+        for face in face_order:
+            target_normal = normals[face]
+
+            for position in positions[face]:
+                cubie = cubie_at[position]
+
+                for axis, component in enumerate(cubie.home_position):
+                    if component == 0:
+                        continue
+
+                    home_normal = [0, 0, 0]
+                    home_normal[axis] = component
+                    home_normal_tuple = tuple(home_normal)
+
+                    if cubie.orientation * home_normal_tuple == target_normal: # type: ignore
+                        result.append(color_by_normal[home_normal_tuple]) # type: ignore
+                        break
+                else:
+                    raise ValueError(f"No sticker found at {position} facing {face}")
+
+        return "".join(result)
+                    
