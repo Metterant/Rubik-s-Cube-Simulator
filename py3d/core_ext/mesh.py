@@ -23,6 +23,7 @@ class Mesh(Object3D):
         # Unbind this vertex array object
         GL.glBindVertexArray(0)
 
+
     @property
     def geometry(self):
         return self._geometry
@@ -38,3 +39,7 @@ class Mesh(Object3D):
     @property
     def visible(self):
         return self._visible
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
