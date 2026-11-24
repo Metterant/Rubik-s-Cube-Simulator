@@ -78,7 +78,6 @@ def generate_solution_sequence(cube: RubiksCube):
     for move in rotation_solution:
         normalized_rubiks_cube.consume_move(move)
     
-    
     cubestring = normalized_rubiks_cube.serialize()
     
     solution = sv.solve(cubestring).split()
