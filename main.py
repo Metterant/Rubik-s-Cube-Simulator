@@ -1,6 +1,7 @@
 import os
 import OpenGL.GL as GL
 from collections import deque
+from functools import partial
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -49,6 +50,7 @@ class Game(Base):
         # Values
         self.rig_z_range = [5, 14]
         self.turn_duration = 0.25
+        self.turn_speed = 1.0
         self.mouse_rotate_multiplier = 0.005
         self.mouse_wheel_zoom_multiplier = 0.4
         self.moves_turned = 0
@@ -58,6 +60,7 @@ class Game(Base):
         
         # Configurations
         self.is_locked = False
+        self.is_manual = False
         
         # Input Logics
         self.is_holding_shift = False
@@ -92,7 +95,12 @@ class Game(Base):
         self.gui.add_button(x=10, y=50, width=100, height=32, callback=self._solve, text="Solve", text_offset=(12, 0))
         
         self.gui.add_button(x=self.screen_width - 110, y=10, width=100, height=32, callback=self._undo, text="Undo", text_offset=(20, 0))
-        self.gui.add_button(x=self.screen_width - 110, y=50, width=100, height=32, callback=self._serialize, text="Serialize")
+        
+        self.gui.quarter_speed_button.callback = partial(self._set_turn_speed, 0.25)
+        self.gui.half_speed_button.callback = partial(self._set_turn_speed, 0.5)
+        self.gui.normal_speed_button.callback = partial(self._set_turn_speed, 1.0)
+        self.gui.double_speed_button.callback = partial(self._set_turn_speed, 2.0)
+        self.gui.serialize_button.callback = self._serialize
     
     def _rotate_rubiks(self, horizontal_amount, vertical_amount):
         self.yaw_pivot.rotate_y(horizontal_amount)
@@ -207,7 +215,7 @@ class Game(Base):
             if move[1] == "'": clockwise = False
             else: number_of_repeats = max(1, int(move[1]))
         
-        t = self.delta_time / self.turn_duration * number_of_repeats
+        t = self.delta_time / self.turn_duration * self.turn_speed * number_of_repeats
         
         match face:
             case "R":
@@ -288,6 +296,17 @@ class Game(Base):
         move = self._get_undo_move()
         self._feed_moves([move], False, False, False)
     
+    def _set_turn_speed(self, speed):
+        self.turn_speed = speed
+        print(f"Set speed to x{speed}")
+    
+    def _set_manual_turn(self):
+        self.is_manual = not self.is_manual
+    
+    def _manual_turn(self):
+        if self.is_manual:
+            self._process_queue()
+    
     def translate_rig_z(self, z_amount=0.0):
         curr_z = self.rig.local_position[2]
         
@@ -304,10 +323,11 @@ class Game(Base):
         
         if self.turn_queue or self.curr_turn:
             self.turn_elapsed += self.delta_time
-            if self.turn_elapsed >= self.turn_duration:
+            if self.turn_elapsed >= self.turn_duration / self.turn_speed:
                 self.turn_elapsed = 0
                 self._sync_cubies()
-                self._process_queue()
+                if not self.is_manual:
+                    self._process_queue()
         else:
             self.is_locked = False
             self.turn_elapsed = 0
@@ -320,6 +340,8 @@ class Game(Base):
             clear_depth=True, # Make sure other objects will not block the UI
         )
         # pygame.display.flip() presents the combined result
+    
+    
 
 if __name__ == "__main__":
     Game(screen_size=[800, 600]).run()
