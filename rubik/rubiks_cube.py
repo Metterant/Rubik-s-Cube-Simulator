@@ -1,4 +1,4 @@
-from typing import cast
+import numpy as np
 
 from .cubie_data import CubieData, PieceType
 from .orientation import Orientation
@@ -152,6 +152,8 @@ class RubiksCube:
     
     def serialize(self) -> str:
         face_order = "URFDLB"
+        
+        # Two-way mapping (get face by normal and get normal by face)
         normals = {
             "U": (0, 1, 0),
             "R": (1, 0, 0),
@@ -172,6 +174,7 @@ class RubiksCube:
             "B": [(x, y, -1) for y in (1, 0, -1) for x in (1, 0, -1)],
         }
 
+        # Dict for instant access to cubie by position
         cubie_at = {cubie.current_position: cubie for cubie in self.cubies}
         result = []
 
@@ -184,11 +187,13 @@ class RubiksCube:
                 for axis, component in enumerate(cubie.home_position):
                     if component == 0:
                         continue
-
+                        
+                    # Get the normal of the sticker
                     home_normal = [0, 0, 0]
                     home_normal[axis] = component
                     home_normal_tuple = tuple(home_normal)
 
+                    # Check if the normal is facing the same direction as the current face's normal
                     if cubie.orientation * home_normal_tuple == target_normal: # type: ignore
                         result.append(color_by_normal[home_normal_tuple]) # type: ignore
                         break
