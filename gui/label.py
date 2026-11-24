@@ -9,7 +9,6 @@ class Label(Mesh):
     def __init__(self, pos_x = 0, pos_y = 0, text="label", font_size=28):
         self.pos_x = pos_x
         self.pos_y = pos_y
-        self.text = text
         
         texture = TextTexture(
             text=text,
