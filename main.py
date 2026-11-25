@@ -3,11 +3,13 @@ import OpenGL.GL as GL
 from collections import deque
 from functools import partial
 
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 from py3d.core_ext.object3d import Object3D
 from py3d.geometry.box import BoxGeometry
 from py3d.material.surface import SurfaceMaterial
+from py3d.material.material import Material
 from py3d.core.base import Base
 from py3d.core_ext.camera import Camera
 from py3d.core_ext.mesh import Mesh
@@ -21,6 +23,7 @@ from py3d.extras.movement_rig import MovementRig
 from py3d.extras.text_texture import TextTexture
 from py3d.material.basic import BasicMaterial
 from py3d.core.matrix import Matrix
+from py3d.extras.postprocessor import Postprocessor
 
 
 import utils.create_objects as create_objects
@@ -39,6 +42,49 @@ class Game(Base):
         self.screen_width = 800
         self.screen_height = 600
         
+        # Post-rendering vignette effect
+        vignette_vs_code = """
+        in vec2 vertexPosition;
+        in vec2 vertexUV;
+        out vec2 UV;
+        void main()
+        {
+            gl_Position = vec4(vertexPosition, 0.0, 1.0);
+            UV = vertexUV;
+        }
+        """
+        
+        vignette_fs_code = """
+        uniform sampler2D textureSampler;
+        uniform vec2 resolution;
+        uniform float strength;
+        in vec2 UV;
+        out vec4 fragColor;
+
+        void main() {
+            vec4 color = texture(textureSampler, UV);
+
+            vec2 centered = UV * 2.0 - 1.0;
+            centered.x *= resolution.x / resolution.y;
+
+            float edge = smoothstep(0.35, 1.15, length(centered));
+            color.rgb *= 1.0 - strength * edge;
+
+            fragColor = color;
+        }
+        """
+        vignette_material = Material(
+            vertex_shader_code=vignette_vs_code,
+            fragment_shader_code=vignette_fs_code,
+        )
+        # postprocessor renders the scene into textureSample which is then passed to this shader
+        vignette_material.add_uniform("sampler2D", "textureSampler", [0, 1]) 
+        vignette_material.add_uniform(
+            "vec2", "resolution", [self.screen_width, self.screen_height]
+        )
+        vignette_material.add_uniform("float", "strength", 0.45)
+        vignette_material.locate_uniforms()
+        
         self.renderer = Renderer(clear_color=(0.0, 0.8, 0.8))
         self.scene = Scene()
         self.camera = Camera(aspect_ratio=self.screen_width/self.screen_height) # type: ignore
@@ -46,6 +92,9 @@ class Game(Base):
         self.rig.add(self.camera)
         self.scene.add(self.rig)
         self.rig.set_position([0, 0, 7])
+
+        self.postprocessor = Postprocessor(self.renderer, self.scene, self.camera)
+        self.postprocessor.add_effect(vignette_material)
         
         # Values
         self.rig_z_range = [5, 14]
@@ -332,7 +381,8 @@ class Game(Base):
             self.is_locked = False
             self.turn_elapsed = 0
         
-        self.renderer.render(self.scene, self.camera)
+        # self.renderer.render(self.scene, self.camera)
+        self.postprocessor.render()
         self.renderer.render(
             self.gui.scene,
             self.gui.camera,
