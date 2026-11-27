@@ -157,20 +157,18 @@ class Game(Base):
         )
         fxaa_material.locate_uniforms()
         
-        self.renderer = Renderer(clear_color=(0.0, 0.8, 0.8))
         self.scene = Scene()
+        self.renderer = Renderer(clear_color=(0.0, 0.8, 0.8))
         self.camera = Camera(aspect_ratio=self.screen_width/self.screen_height) # type: ignore
-        self.rig = MovementRig()
-        self.rig.add(self.camera)
-        self.scene.add(self.rig)
-        self.rig.set_position([0, 0, 7])
-
+        self.camera.set_position([0, 0, 7])
+        self.scene.add(self.camera)
+        
         self.postprocessor = Postprocessor(self.renderer, self.scene, self.camera)
         self.postprocessor.add_effect(vignette_material)
         self.postprocessor.add_effect(fxaa_material)
         
         # Values
-        self.rig_z_range = [5, 14]
+        self.camera_z_range = [5, 14]
         self.turn_duration = 0.25
         self.turn_speed = 1.0
         self.mouse_rotate_multiplier = 0.005
@@ -283,7 +281,7 @@ class Game(Base):
         if self.input.is_mouse_down(self.input.RIGHT_CLICK_MOUSE):
             self._reset_rotations()
             
-        self.translate_rig_z(-self.input.wheel_y * self.mouse_wheel_zoom_multiplier)
+        self.translate_camera_z(-self.input.wheel_y * self.mouse_wheel_zoom_multiplier)
         
     def _check_keyboard_input(self):   
         self.is_holding_shift = self.input.is_key_pressed("left shift") or self.input.is_key_pressed("right shift")
@@ -429,11 +427,11 @@ class Game(Base):
         if self.is_manual:
             self._process_queue()
     
-    def translate_rig_z(self, z_amount=0.0):
-        curr_z = self.rig.local_position[2]
+    def translate_camera_z(self, z_amount=0.0):
+        curr_z = self.camera.local_position[2]
         
-        if self.rig_z_range[0] <= curr_z + z_amount <= self.rig_z_range[1]:
-            self.rig.translate(0, 0, z_amount)
+        if self.camera_z_range[0] <= curr_z + z_amount <= self.camera_z_range[1]:
+            self.camera.translate(0, 0, z_amount)
         
     def update(self):
         self._animate_turn(self.curr_turn)
