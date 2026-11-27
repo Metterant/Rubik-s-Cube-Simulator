@@ -12,7 +12,7 @@ class Label(Mesh):
         
         texture = TextTexture(
             text=text,
-            font_size=font_size,
+            font_size=font_size * 2,
             transparent=True,
         )
         texture.set_properties({
@@ -25,8 +25,8 @@ class Label(Mesh):
         text_width, text_height = texture.surface.get_size() # type: ignore
     
         geometry = RectangleGeometry(
-            text_width,
-            text_height,
+            text_width/2, # type: ignore
+            text_height/2, # type: ignore
             position=(0, 0),
             alignment=(0, 0),
         )
